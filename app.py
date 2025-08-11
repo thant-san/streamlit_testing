@@ -1,22 +1,28 @@
 import streamlit as st
 from groq import Groq
 
-# Load your API key securely from Streamlit secrets
-GROQ_API_KEY = st.secrets["GROQ_API_KEY"]
+# TEST: Hardcode API key first to see output
 
-# Initialize Groq client once
 client = Groq(api_key=GROQ_API_KEY)
 
-st.title("Mental Health Assistant (Powered by Groq LLM)")
+CRISIS_MESSAGE = """
+⚠️ It sounds like you might be going through a difficult time.
+If you are thinking about suicide or self-harm, please reach out to a crisis hotline immediately:
 
-user_question = st.text_area("Ask a mental health related question:")
+📞 Thailand: 1323 (Mental Health Hotline)
+📞 Myanmar: 09-765-999-123 (Shwe Yaung Hnin Si Helpline)
+📞 International List: https://findahelpline.com
+"""
 
-if st.button("Get Answer"):
-    if not user_question.strip():
-        st.warning("Please enter a question first.")
-    else:
-        # Prompt template with instructions
-        template = """
+CRISIS_KEYWORDS = [
+    "kill myself", "end my life", "suicide", "want to die",
+    "can't go on", "self harm", "cut myself"
+]
+
+def contains_crisis_keywords(text):
+    return any(kw in text.lower() for kw in CRISIS_KEYWORDS)
+
+TEMPLATE = """
 You are a compassionate and safe mental health assistant.
 
 Rules:
@@ -30,23 +36,19 @@ Rules:
 User question: {question}
 """
 
-        # Fill template with user question
-        formatted_prompt = template.format(question=user_question)
+st.set_page_config(page_title="Mental Health Chatbot", page_icon="💬")
+st.title("💬 Mental Health Chatbot")
 
-        with st.spinner("Contacting Groq API..."):
-            try:
-                chat_completion = client.chat.completions.create(
-                    messages=[
-                        {
-                            "role": "user",
-                            "content": formatted_prompt,
-                        }
-                    ],
-                    model="llama-3.3-70b-versatile",
-                )
-                answer = chat_completion.choices[0].message.content
-                st.subheader("Answer:")
-                st.write(answer)
+user_question = st.text_input("Your question:")
 
-            except Exception as e:
-                st.error(f"API error: {e}")
+if user_question:  # triggers on Enter or when text changes
+    if contains_crisis_keywords(user_question):
+        st.warning(CRISIS_MESSAGE)
+    else:
+        with st.spinner("Thinking..."):
+            formatted_prompt = TEMPLATE.format(question=user_question)
+            chat_completion = client.chat.completions.create(
+                messages=[{"role": "user", "content": formatted_prompt}],
+                model="llama-3.3-70b-versatile",
+            )
+        st.write(chat_completion.choices[0].message.content)
