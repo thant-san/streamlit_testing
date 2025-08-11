@@ -2,7 +2,7 @@ import streamlit as st
 from groq import Groq
 
 # TEST: Hardcode API key first to see output
-
+GROQ_API_KEY = st.secrets["GROQ_API_KEY"]
 client = Groq(api_key=GROQ_API_KEY)
 
 CRISIS_MESSAGE = """
